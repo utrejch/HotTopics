@@ -7,13 +7,12 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Keeps stats on word count, calculates and logs top words every X second to stdout and top list every Y seconds,
@@ -32,12 +31,12 @@ public class WordCounterBolt extends BaseRichBolt {
     private long lastLogTime;
     private long lastClearTime;
     private OutputCollector collector;
+    private HashSet<String> stoplist;
 
     public WordCounterBolt(long logIntervalSec, long clearIntervalSec, int topListSize) {
         this.logIntervalSec = logIntervalSec;
         this.clearIntervalSec = clearIntervalSec;
         this.topListSize = topListSize;
-
     }
 
     @Override
@@ -46,6 +45,14 @@ public class WordCounterBolt extends BaseRichBolt {
         lastLogTime = System.currentTimeMillis();
         lastClearTime = System.currentTimeMillis();
         this.collector = collector;
+
+        String s = null;
+        try {
+            s = IOUtils.toString(getClass().getResourceAsStream("/resources/kw2ten.txt"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        stoplist = new HashSet<String> (Arrays.asList(s.split("\n")));
 
     }
 
@@ -62,13 +69,13 @@ public class WordCounterBolt extends BaseRichBolt {
         String query = word;
         Long count = counter.get(query);
         count = count == null ? 1L : count + 1;
-        counter.put(query, count);
+        if(!stoplist.contains(query)) counter.put(query, count);
         //logger.info(query);
         //logger.info(new StringBuilder(word).append('>').append(count).toString());
 
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
-        if (logPeriodSec > 300) {
+        if (logPeriodSec > 100) {
         //if (logPeriodSec > logIntervalSec) {
             logger.info("Word count: " + counter.size());
 

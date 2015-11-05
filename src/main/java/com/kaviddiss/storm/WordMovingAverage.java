@@ -67,7 +67,7 @@ public class WordMovingAverage extends BaseRichBolt {
             macounter.get(word).add(count);
         }
         else {
-            CircularFifoQueue<Long> cfq = new CircularFifoQueue<Long>(CFQLIMIT);
+            CircularFifoQueue<Long> cfq = new CircularFifoQueue<Long>(4);
             cfq.add(count);
             macounter.put(word, cfq);
         }
@@ -75,7 +75,7 @@ public class WordMovingAverage extends BaseRichBolt {
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
 
-        if (logPeriodSec > 30) {
+        if (logPeriodSec > 200) {
             for( Map.Entry<String,CircularFifoQueue<Long>> entry : macounter.entrySet()) {
                 String kw= entry.getKey();
 
@@ -155,12 +155,18 @@ public class WordMovingAverage extends BaseRichBolt {
             StringBuilder sb = new StringBuilder();
             java.util.Date date= new java.util.Date();
             Timestamp tmps = new Timestamp(date.getTime());
+            Double all = 0.0;
+
+            for (Map.Entry<Double, String> ent : top1.entrySet()) {
+                all =+ ent.getKey();
+            }
+
             for (Map.Entry<Double, String> ent : top1.entrySet()) {
                 double count = ent.getKey();
                 String word = ent.getValue();
                 word = word.replace(";", "");
                 sb.append(word).append(";").append(count).append("|");
-                logger.info(new StringBuilder("top - ").append(word).append('>').append(count).toString());
+                logger.info(new StringBuilder("top - ").append(word).append('>').append((count / all) * 100).toString());
                 try {
                     writer.write(new StringBuilder().append(tmps.toString()).append("\t")
                             .append(word).append("\t").append(count).toString());

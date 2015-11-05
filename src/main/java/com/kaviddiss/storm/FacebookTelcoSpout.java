@@ -70,6 +70,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
         sources = new String [] {"youseedanmark", "tdc", "teliadanmark", "cbbmobil", "Bibobmobil",
                         "TELMORE", "fullratedk", "Callme", "bedst.til.prisen"};
 
+        sources = new String [] {"youseedanmark", "telenordanmark"};
     }
 
 
@@ -96,7 +97,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
                 //System.out.println(pivotDate.toString());
                 if (p.getCreatedTime() != null && p.getMessage() != null) {// && pivotDate.before(p.getCreatedTime())) {
                     pivotDate = p.getCreatedTime();
-                    System.out.println(p.getMessage().toLowerCase());
+                    //System.out.println(p.getMessage().toLowerCase());
                     //System.out.println(pivotDate.toString());
                     //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
                     queue.offer(p.getMessage());
@@ -112,13 +113,13 @@ public class FacebookTelcoSpout extends BaseRichSpout {
                     Date cpivot = getCommentPivot(p.getId());
                     if (c.getCreatedTime() != null && c.getMessage() != null && cpivot.before(c.getCreatedTime())) {
                         setCommentPivot(p.getId(), c.getCreatedTime());
-                        System.out.println("_____" + sources[i]);
-                        System.out.println("c " + cpivot.toString());
-                        System.out.println(c.getCreatedTime().toString());
+                        //System.out.println("_____" + sources[i]);
+                        //System.out.println("c " + cpivot.toString());
+                        //System.out.println(c.getCreatedTime().toString());
                         //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
                         String ctext = c.getMessage().toLowerCase().replace("\n", "").replace("\t", "");
                         ctext = ctext.replaceAll("[^\\p{L}\\p{Nd}]+", " ");
-                        System.out.println(ctext);
+                        //System.out.println(ctext);
                         queue.offer(ctext);
                     }
                 }

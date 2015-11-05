@@ -11,13 +11,8 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.io.*;
+import java.util.*;
 
 /**
  * Created by werni on 14/09/15.
@@ -47,6 +42,7 @@ public class RecordMovingAverage extends BaseRichBolt {
         lastLogTime = System.currentTimeMillis();
         lastClearTime = System.currentTimeMillis();
         this.collector = collector;
+
 
     }
 

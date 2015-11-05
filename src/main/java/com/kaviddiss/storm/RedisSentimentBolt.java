@@ -15,7 +15,7 @@ import backtype.storm.tuple.Tuple;
 /**
  * Increment key in sorted set
  */
-public class RedisIncrementBolt extends BaseRichBolt {
+public class RedisSentimentBolt extends BaseRichBolt {
     private static final long serialVersionUID = -2819069215379325159L;
     private final String key;
     private final String redisHost;
@@ -30,7 +30,7 @@ public class RedisIncrementBolt extends BaseRichBolt {
      * @param redisPort
      * @param redisDb
      */
-    public RedisIncrementBolt(final String key, final String redisHost, final int redisPort, final int redisDb) {
+    public RedisSentimentBolt(final String key, final String redisHost, final int redisPort, final int redisDb) {
         super();
         this.key = key;
         this.redisHost = redisHost;
@@ -49,19 +49,20 @@ public class RedisIncrementBolt extends BaseRichBolt {
 
     @Override
     public void execute(final Tuple input) {
-        String word = (String) input.getValueByField("word");
-        Double count = (Double) input.getValueByField("count");
+        String agg = (String) input.getValueByField("agg");
+        //Double count = (Double) input.getValueByField("score");
         //redis.set(word, Double.toString(count)) ;
         StringBuilder sb = new StringBuilder();
-        redis.publish("Topology", new StringBuilder().append(word).append("|")
-                .append(Double.toString(count)).toString());
+        redis.publish("Sentiment", new StringBuilder().append(getTimestamp().toString())
+                .append("|").append(agg).toString());
+          //      .append(Double.toString(count )).toString());
 
 
 
         //redis.publish("Topology", sb.append(getTimestamp()).append("|").append(word).
         //        append( "|").append( Double.toString(count * 20)).toString());
         collector.ack(input);
-   }
+    }
 
     @Override
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
@@ -69,7 +70,7 @@ public class RedisIncrementBolt extends BaseRichBolt {
 
     private String getTimestamp(){
         Long d = System.currentTimeMillis();
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         String formattedDate = dateFormat.format(d);
         return formattedDate;
     }

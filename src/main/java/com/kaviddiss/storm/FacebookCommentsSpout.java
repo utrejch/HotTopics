@@ -6,6 +6,9 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 import facebook4j.*;
 import facebook4j.auth.AccessToken;
 import facebook4j.auth.OAuthAuthorization;
@@ -13,6 +16,9 @@ import facebook4j.auth.OAuthSupport;
 import facebook4j.conf.Configuration;
 import facebook4j.conf.ConfigurationBuilder;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -79,7 +85,7 @@ public class FacebookCommentsSpout extends BaseRichSpout {
 
         List<Post> posts = null;
         try {
-            posts =  facebookClient.getFeed("cnn", new Reading().fields("posts,from,comments,likes"));
+            posts =  facebookClient.getFeed("cnn", new Reading().fields("posts,from,comments,likes").filter("stream"));
         } catch (FacebookException e) {
             e.printStackTrace();
         }
@@ -90,38 +96,51 @@ public class FacebookCommentsSpout extends BaseRichSpout {
             }
         });
         */
-        for (Post p : posts) {
-            //System.out.println("p" + p.getCreatedTime().toString());
-            //System.out.println(pivotDate.toString());
-            if (p.getCreatedTime() != null && p.getMessage() != null ){// && pivotDate.before(p.getCreatedTime())) {
-                pivotDate = p.getCreatedTime();
-                System.out.println(p.getMessage().toLowerCase());
+        if(posts != null) {
+            for (Post p : posts) {
+                //System.out.println("p" + p.getCreatedTime().toString());
                 //System.out.println(pivotDate.toString());
-                //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
-                queue.offer(p.getMessage());
-            }
-            List<Comment> comments = p.getComments();
-
-            Collections.sort(comments, new Comparator<Comment>() {
-                public int compare(Comment o1, Comment o2) {
-                    return -1 * o2.getCreatedTime().compareTo(o1.getCreatedTime());
-                }
-            });
-            for(Comment c : comments){
-                Date cpivot = getCommentPivot(p.getId());
-                if (c.getCreatedTime() != null && c.getMessage()  != null && cpivot.before(c.getCreatedTime())) {
-                    setCommentPivot(p.getId(), c.getCreatedTime());
-                    System.out.println("c " + cpivot.toString());
-                    System.out.println(c.getCreatedTime().toString());
+                if (p.getCreatedTime() != null && p.getMessage() != null) {// && pivotDate.before(p.getCreatedTime())) {
+                    pivotDate = p.getCreatedTime();
+                    System.out.println(p.getMessage().toLowerCase());
+                    //System.out.println(pivotDate.toString());
                     //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
-                    String ctext = c.getMessage().toLowerCase().replace("\n", "").replace("\t", "");
-                    ctext =  ctext.replaceAll("[^\\p{L}\\p{Nd}]+", " ");
-                    System.out.println(ctext);
-                    queue.offer(ctext);
+                    queue.offer(p.getMessage());
                 }
-            }
-        }
 
+                PagableList<Comment> comments = p.getComments();
+                Paging<Comment> pagingC;
+                try {
+                    do {
+
+                        Collections.sort(comments, new Comparator<Comment>() {
+                            public int compare(Comment o1, Comment o2) {
+                                return -1 * o2.getCreatedTime().compareTo(o1.getCreatedTime());
+                            }
+                        });
+                        for (Comment c : comments) {
+                            Date cpivot = getCommentPivot(p.getId());
+                            if (c.getCreatedTime() != null && c.getMessage() != null && cpivot.before(c.getCreatedTime())) {
+                                setCommentPivot(p.getId(), c.getCreatedTime());
+                                System.out.println("c " + cpivot.toString());
+                                System.out.println(c.getCreatedTime().toString());
+                                //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
+                                String ctext = c.getMessage().toLowerCase().replace("\n", "").replace("\t", "");
+                                ctext = ctext.replaceAll("[^\\p{L}\\p{Nd}]+", " ");
+                                System.out.println(ctext);
+                                queue.offer(ctext);
+                            }
+                        }
+                        pagingC = comments.getPaging();
+                    }
+                    while ((pagingC != null) &&
+                            ((comments = facebookClient.fetchNext(pagingC)) != null));
+                } catch (FacebookException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        } else {System.out.println("posts is null");}
     }
 
 
@@ -144,6 +163,9 @@ public class FacebookCommentsSpout extends BaseRichSpout {
         // size = 1;
 
     }
+
+
+
 
     private void setCommentPivot(String id, Date d){
         cpivotDate.put(id, d);
