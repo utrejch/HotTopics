@@ -53,7 +53,7 @@ public class RedisIncrementBolt extends BaseRichBolt {
         Double count = (Double) input.getValueByField("count");
         //redis.set(word, Double.toString(count)) ;
         StringBuilder sb = new StringBuilder();
-        redis.publish("Topology", new StringBuilder().append(word).append("|")
+        redis.publish("TopologyTn", new StringBuilder().append(word).append("|")
                 .append(Double.toString(count)).toString());
 
 

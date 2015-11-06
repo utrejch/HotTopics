@@ -33,7 +33,7 @@ public class FacebookCommentsSpout extends BaseRichSpout {
     private SpoutOutputCollector collector;
     private LinkedBlockingQueue<String> queue;
     private Facebook facebookClient;
-
+    private int lag;
     private Date pivotDate;
     private HashMap<String, Date> cpivotDate;
 
@@ -69,7 +69,7 @@ public class FacebookCommentsSpout extends BaseRichSpout {
 
 
         collector = spoutOutputCollector;
-
+        lag = 1;
         queue = new LinkedBlockingQueue<String>();
         pivotDate = new Date(0);
         cpivotDate = new HashMap<String, Date>();
@@ -173,7 +173,12 @@ public class FacebookCommentsSpout extends BaseRichSpout {
 
     private Date getCommentPivot(String id) {
         Date res = new Date(0);
-        if (cpivotDate.containsKey(id))  return cpivotDate.get(id);
+        if (cpivotDate.containsKey(id)){
+            Calendar cal = Calendar.getInstance(); // creates calendar
+            cal.setTime(cpivotDate.get(id)); // sets calendar time/date
+            cal.add(Calendar.HOUR_OF_DAY, lag); // adds one hour
+            res = cal.getTime(); // returns new date object, one hour in the future
+        }
 
         return res;
     }

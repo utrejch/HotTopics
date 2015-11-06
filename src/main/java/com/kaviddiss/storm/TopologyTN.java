@@ -16,10 +16,10 @@ import java.util.Map;
  * Please note that Twitter credentials have to be provided as VM args, otherwise you'll get an Unauthorized error.
  * @link http://twitter4j.org/en/configuration.html#systempropertyconfiguration
  */
-public class SentimentTopology {
+public class TopologyTN {
 
 
-    static final String TOPOLOGY_NAME = "sentiment analysis";
+    static final String TOPOLOGY_NAME = "storm-twitter-word-count";
 
     public static void main(String[] args) {
         Config config = new Config();
@@ -31,14 +31,27 @@ public class SentimentTopology {
         TopologyBuilder b = new TopologyBuilder();
         //b.setSpout("RssSpout", new RssSpout());
         //b.setSpout("TwitterSampleSpout", new TwitterSampleSpout());
+        //b.setSpout("FacebookCommentsSpout", new FacebookCommentsSpout());
         b.setSpout("FacebookTelcoSpout", new FacebookTelcoSpout());
+        //b.setSpout("plitterBolt", new WordSplitterBolt(5)).shuffleGrouping("FacebookTelcoSpout");
+        b.setBolt("WordSplitterBolt", new WordSplitterBolt(5)).shuffleGrouping("FacebookTelcoSpout");
+        b.setBolt("IgnoreWordsBolt", new IgnoreWordsBolt()).fieldsGrouping("WordSplitterBolt", new Fields("lang", "word"));
+        //b.setBolt("IgnoreWordsBolt", new IgnoreWordsBolt()).fieldsGrouping("WordSplitterBolt", new Fields("word"));
+        b.setBolt("WordCounterBolt", new WordCounterBolt(10, 5 * 60, 50)).fieldsGrouping("IgnoreWordsBolt",
+                new Fields("word"));
+        b.setBolt("WordMovingAverage", new WordMovingAverage()).globalGrouping("WordCounterBolt");
+        //b.setBolt("RecordMovingAverage", new RecordMovingAverage()).globalGrouping("WordCounterBolt");
+        b.setBolt("redis", new RedisIncrementBolt("TopologyTN", redisHost, redisPort, redisDb)).
+                shuffleGrouping("WordMovingAverage");
+        //b.setBolt("redis", new RedisAggBolt("clients", redisHost, redisPort, redisDb)).
+        //shuffleGrouping("RecordMovingAverage");
+        //sentiment
+		/*
 		b.setBolt("sentiment", new SentimentBolt()).shuffleGrouping("FacebookTelcoSpout");
-        b.setBolt("sentimentAgg", new SentimentAggBolt()).shuffleGrouping("sentiment");
-        b.setBolt("sentimentMA", new SentimentMovingAverage()).shuffleGrouping("sentimentAgg");
-
 		b.setBolt("redisSentiment", new RedisSentimentBolt("Sentiment", redisHost, redisPort, redisDb)).
-				shuffleGrouping("sentimentMA");
+				shuffleGrouping("sentiment");
 
+		*/
         final LocalCluster cluster = new LocalCluster();
         cluster.submitTopology(TOPOLOGY_NAME, config, b.createTopology());
 

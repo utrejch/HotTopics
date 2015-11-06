@@ -34,7 +34,6 @@ public class WordMovingAverage extends BaseRichBolt {
     private OutputCollector collector;
     private LinkedList<String> zeros;
     private Long lzero;
-    private Writer writer;
     public WordMovingAverage(){
 
 
@@ -42,19 +41,15 @@ public class WordMovingAverage extends BaseRichBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         macounter = new HashMap <String, CircularFifoQueue<Long>> ();
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream("counts.txt"), "utf-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
         lastLogTime = System.currentTimeMillis();
         lastClearTime = System.currentTimeMillis();
         this.collector = collector;
         zeros = new LinkedList<String>();
         lzero = new Long(0);
+        collector.emit(new Values("waiting", 30.0));
+        collector.emit(new Values("for", 30.0));
+        collector.emit(new Values("data", 30.0));
+        collector.emit(new Values("stream", 30.0));
     }
 
     @Override
@@ -75,7 +70,7 @@ public class WordMovingAverage extends BaseRichBolt {
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
 
-        if (logPeriodSec > 200) {
+        if (logPeriodSec > 1000) {
             for( Map.Entry<String,CircularFifoQueue<Long>> entry : macounter.entrySet()) {
                 String kw= entry.getKey();
 
@@ -98,7 +93,7 @@ public class WordMovingAverage extends BaseRichBolt {
 
     public void publishMA(){
         SortedMap<Double, String> top1 = new TreeMap<Double, String>();
-
+        Double all = 0.0;
         for( Map.Entry<String,CircularFifoQueue<Long>> entry : macounter.entrySet()){
             String word = entry.getKey();
 
@@ -113,18 +108,22 @@ public class WordMovingAverage extends BaseRichBolt {
 
             double ma = sum / madenom;
             top1.put(ma, word);
-            if (top1.size() > 30) {
+            if (top1.size() > 15) {
                 top1.remove(top1.firstKey());
             }
             //if( ma > 5) logger.info(new StringBuilder("ma - ").append(entry.getKey()).append(" ").append(ma).toString());
         }
+        for (Map.Entry<Double, String> ent : top1.entrySet()) {
+            all =+ ent.getKey();
+        }
 
         for (Map.Entry<Double, String> ent : top1.entrySet()) {
-            double count = ent.getKey();
+            double count = (ent.getKey() / all) * 50;
             String word = ent.getValue();
             logger.info(new StringBuilder("#top:\t").append(word).append(':').append(count).toString());
             collector.emit(new Values(word, count));
         }
+        all = 0.0;
         zeros.clear();
 
     }
@@ -142,7 +141,7 @@ public class WordMovingAverage extends BaseRichBolt {
             }
             double ma = sum / madenom;
             top1.put(ma, word);
-            if (top1.size() > 30) {
+            if (top1.size() > 15) {
                 top1.remove(top1.firstKey());
             }
             //if( ma > 5) logger.info(new StringBuilder("ma - ").append(entry.getKey()).append(" ").append(ma).toString());
@@ -165,14 +164,8 @@ public class WordMovingAverage extends BaseRichBolt {
                 double count = ent.getKey();
                 String word = ent.getValue();
                 word = word.replace(";", "");
-                sb.append(word).append(";").append(count).append("|");
-                logger.info(new StringBuilder("top - ").append(word).append('>').append((count / all) * 100).toString());
-                try {
-                    writer.write(new StringBuilder().append(tmps.toString()).append("\t")
-                            .append(word).append("\t").append(count).toString());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                sb.append(word).append(";").append((count /all) * 200 ).append("|");
+                logger.info(new StringBuilder("top - ").append(word).append('>').append((count / all) * 200).toString());
             }
             collector.emit(new Values(sb.toString()));
         }

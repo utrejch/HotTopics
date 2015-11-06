@@ -7,6 +7,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,15 +21,18 @@ public class SentimentAggBolt extends BaseRichBolt {
     private HashMap<String, Double> counter;
     private OutputCollector collector;
     long lastLogTime;
+    private Map<String, CircularFifoQueue<Long>> macounter;
     Double all;
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+        macounter = new HashMap <String, CircularFifoQueue<Long>> ();
         scores = new LinkedList<Long>();
         counter = new HashMap<String, Double>();
         this.collector = collector;
         lastLogTime = System.currentTimeMillis();
         all = 0.0;
+
     }
 
     @Override
@@ -40,6 +44,7 @@ public class SentimentAggBolt extends BaseRichBolt {
         if (score <= 0) val = "neg";
         if (score >= 4) val = "pos";
         all = all + 1;
+
         Double count = counter.get(val);
         count = count == null ? 1.0 : count + 1.0;
         counter.put(val, count);
@@ -65,17 +70,14 @@ public class SentimentAggBolt extends BaseRichBolt {
             sb.append(neg / all).append("|").append(neu / all)
                     .append("|").append(pos / all).toString();
 
-            System.out.println(sb.toString());
+
+            //System.out.println(sb.toString());
             collector.emit(new Values(sb.toString()));
             all = 0.0;
             counter.clear();
             lastLogTime = now;
         }
-        try {
-            sleep(300);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
 
     }
 

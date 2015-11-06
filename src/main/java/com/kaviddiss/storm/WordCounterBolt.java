@@ -75,7 +75,7 @@ public class WordCounterBolt extends BaseRichBolt {
 
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
-        if (logPeriodSec > 100) {
+        if (logPeriodSec > 500) {
         //if (logPeriodSec > logIntervalSec) {
             logger.info("Word count: " + counter.size());
 

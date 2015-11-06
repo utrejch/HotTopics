@@ -30,6 +30,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
     private String[] sources;
     private Date pivotDate;
     private HashMap<String, Date> cpivotDate;
+    private int lag;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -51,6 +52,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
         FacebookFactory facebookFactory = new FacebookFactory(configuration);
         facebookClient = facebookFactory.getInstance();
         AccessToken accessToken = null;
+        lag = 1;
         try {
             OAuthSupport oAuthSupport = new OAuthAuthorization(configuration);
             accessToken = oAuthSupport.getOAuthAppAccessToken();
@@ -67,10 +69,10 @@ public class FacebookTelcoSpout extends BaseRichSpout {
         queue = new LinkedBlockingQueue<String>();
         pivotDate = new Date(0);
         cpivotDate = new HashMap<String, Date>();
-        sources = new String [] {"youseedanmark", "tdc", "teliadanmark", "cbbmobil", "Bibobmobil",
-                        "TELMORE", "fullratedk", "Callme", "bedst.til.prisen"};
+       // sources = new String [] {"youseedanmark", "tdc", "teliadanmark", "cbbmobil", "Bibobmobil",
+        //                "TELMORE", "fullratedk", "Callme", "bedst.til.prisen"};
 
-        sources = new String [] {"youseedanmark", "telenordanmark"};
+        sources = new String [] { "telenordanmark"};
     }
 
 
@@ -154,7 +156,12 @@ public class FacebookTelcoSpout extends BaseRichSpout {
 
     private Date getCommentPivot(String id) {
         Date res = new Date(0);
-        if (cpivotDate.containsKey(id))  return cpivotDate.get(id);
+        if (cpivotDate.containsKey(id)){
+            Calendar cal = Calendar.getInstance(); // creates calendar
+            cal.setTime(cpivotDate.get(id)); // sets calendar time/date
+            cal.add(Calendar.HOUR_OF_DAY, lag); // adds one hour
+            res = cal.getTime(); // returns new date object, one hour in the future
+        }
 
         return res;
     }
