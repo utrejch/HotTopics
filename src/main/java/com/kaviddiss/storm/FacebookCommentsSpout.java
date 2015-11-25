@@ -165,21 +165,25 @@ public class FacebookCommentsSpout extends BaseRichSpout {
     }
 
 
-
-
     private void setCommentPivot(String id, Date d){
         cpivotDate.put(id, d);
     }
 
     private Date getCommentPivot(String id) {
         Date res = new Date(0);
+
         if (cpivotDate.containsKey(id)){
             Calendar cal = Calendar.getInstance(); // creates calendar
             cal.setTime(cpivotDate.get(id)); // sets calendar time/date
-            cal.add(Calendar.HOUR_OF_DAY, lag); // adds one hour
+            cal.add(Calendar.HOUR_OF_DAY, -lag); // adds one hour
             res = cal.getTime(); // returns new date object, one hour in the future
-        }
+       }
 
+       /*
+        if (cpivotDate.containsKey(id)){
+            res = cpivotDate.get(id);
+        }
+        */
         return res;
     }
 }

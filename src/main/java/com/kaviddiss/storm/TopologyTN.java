@@ -41,7 +41,7 @@ public class TopologyTN {
                 new Fields("word"));
         b.setBolt("WordMovingAverage", new WordMovingAverage()).globalGrouping("WordCounterBolt");
         //b.setBolt("RecordMovingAverage", new RecordMovingAverage()).globalGrouping("WordCounterBolt");
-        b.setBolt("redis", new RedisIncrementBolt("TopologyTN", redisHost, redisPort, redisDb)).
+        b.setBolt("redis", new RedisIncrementBolt("TopologyTn", redisHost, redisPort, redisDb)).
                 shuffleGrouping("WordMovingAverage");
         //b.setBolt("redis", new RedisAggBolt("clients", redisHost, redisPort, redisDb)).
         //shuffleGrouping("RecordMovingAverage");

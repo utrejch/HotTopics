@@ -58,7 +58,7 @@ public class SentimentMovingAverage extends BaseRichBolt {
         }
 
         try {
-            sleep(700);
+            sleep(300);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

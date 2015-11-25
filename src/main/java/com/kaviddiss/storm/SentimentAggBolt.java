@@ -55,7 +55,7 @@ public class SentimentAggBolt extends BaseRichBolt {
         Double pos;
         System.out.println(logPeriodSec);
         System.out.println(all);
-        if (logPeriodSec > 30 && all > 0) {
+        if (logPeriodSec > 10 && all > 0) {
             //if (logPeriodSec > logIntervalSec) {
             StringBuilder sb = new StringBuilder();
 

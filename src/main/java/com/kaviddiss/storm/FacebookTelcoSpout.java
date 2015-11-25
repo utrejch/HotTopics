@@ -31,6 +31,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
     private Date pivotDate;
     private HashMap<String, Date> cpivotDate;
     private int lag;
+    Date endDate;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -39,7 +40,10 @@ public class FacebookTelcoSpout extends BaseRichSpout {
 
     @Override
     public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
-
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(0);
+        cal.set(2015, 10, 17, 0, 0, 0);
+        endDate = cal.getTime();
 
         ConfigurationBuilder confBuilder = new ConfigurationBuilder();
 
@@ -69,10 +73,10 @@ public class FacebookTelcoSpout extends BaseRichSpout {
         queue = new LinkedBlockingQueue<String>();
         pivotDate = new Date(0);
         cpivotDate = new HashMap<String, Date>();
-       // sources = new String [] {"youseedanmark", "tdc", "teliadanmark", "cbbmobil", "Bibobmobil",
-        //                "TELMORE", "fullratedk", "Callme", "bedst.til.prisen"};
+        sources = new String [] {"youseedanmark", "tdc", "teliadanmark", "cbbmobil", "Bibobmobil",
+                        "TELMORE", "fullratedk", "Callme", "bedst.til.prisen"};
 
-        sources = new String [] { "telenordanmark"};
+        //sources = new String [] { "telenordanmark"};
     }
 
 
@@ -97,7 +101,7 @@ public class FacebookTelcoSpout extends BaseRichSpout {
             for (Post p : posts) {
                 //System.out.println("p" + p.getCreatedTime().toString());
                 //System.out.println(pivotDate.toString());
-                if (p.getCreatedTime() != null && p.getMessage() != null) {// && pivotDate.before(p.getCreatedTime())) {
+                if (p.getCreatedTime() != null && p.getMessage() != null  && endDate.before(p.getCreatedTime())) {
                     pivotDate = p.getCreatedTime();
                     //System.out.println(p.getMessage().toLowerCase());
                     //System.out.println(pivotDate.toString());
@@ -113,13 +117,13 @@ public class FacebookTelcoSpout extends BaseRichSpout {
                 });
                 for (Comment c : comments) {
                     Date cpivot = getCommentPivot(p.getId());
-                    if (c.getCreatedTime() != null && c.getMessage() != null && cpivot.before(c.getCreatedTime())) {
+                    if (c.getCreatedTime() != null && c.getMessage() != null && endDate.before(c.getCreatedTime())) {
                         setCommentPivot(p.getId(), c.getCreatedTime());
                         //System.out.println("_____" + sources[i]);
-                        //System.out.println("c " + cpivot.toString());
-                        //System.out.println(c.getCreatedTime().toString());
+                        System.out.println("c " + cpivot.toString());
+                        System.out.println(c.getCreatedTime().toString());
                         //System.out.println(feed.getTitle().toString() + ": " + entry.getPublishedDate().toString() + " " + title);
-                        String ctext = c.getMessage().toLowerCase().replace("\n", "").replace("\t", "");
+                        String ctext = c.getMessage().toLowerCase().replace("\n", " ").replace("\t", " ");
                         ctext = ctext.replaceAll("[^\\p{L}\\p{Nd}]+", " ");
                         //System.out.println(ctext);
                         queue.offer(ctext);

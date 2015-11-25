@@ -28,7 +28,7 @@ public class WordMovingAverage extends BaseRichBolt {
     private int movingAverageWindow = 1000;
     private long lastLogTime;
     private long lastClearTime;
-    private int CFQLIMIT = 10;
+    private int CFQLIMIT = 20;
     private int madenom;
     private Map<String, CircularFifoQueue<Long>> macounter;
     private OutputCollector collector;
@@ -46,10 +46,6 @@ public class WordMovingAverage extends BaseRichBolt {
         this.collector = collector;
         zeros = new LinkedList<String>();
         lzero = new Long(0);
-        collector.emit(new Values("waiting", 30.0));
-        collector.emit(new Values("for", 30.0));
-        collector.emit(new Values("data", 30.0));
-        collector.emit(new Values("stream", 30.0));
     }
 
     @Override
@@ -70,7 +66,7 @@ public class WordMovingAverage extends BaseRichBolt {
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
 
-        if (logPeriodSec > 1000) {
+        if (logPeriodSec > 100) {
             for( Map.Entry<String,CircularFifoQueue<Long>> entry : macounter.entrySet()) {
                 String kw= entry.getKey();
 
@@ -108,7 +104,7 @@ public class WordMovingAverage extends BaseRichBolt {
 
             double ma = sum / madenom;
             top1.put(ma, word);
-            if (top1.size() > 15) {
+            if (top1.size() > 10) {
                 top1.remove(top1.firstKey());
             }
             //if( ma > 5) logger.info(new StringBuilder("ma - ").append(entry.getKey()).append(" ").append(ma).toString());
@@ -125,6 +121,7 @@ public class WordMovingAverage extends BaseRichBolt {
         }
         all = 0.0;
         zeros.clear();
+        collector.emit(new Values("aa11aa", 0.0));
 
     }
     public void publishAgg(){
@@ -148,7 +145,7 @@ public class WordMovingAverage extends BaseRichBolt {
         }
         long now = System.currentTimeMillis();
         long logPeriodSec = (now - lastLogTime) / 1000;
-        if (logPeriodSec > 600) {
+        if (logPeriodSec > 300) {
 
             lastLogTime = now;
             StringBuilder sb = new StringBuilder();
@@ -164,7 +161,7 @@ public class WordMovingAverage extends BaseRichBolt {
                 double count = ent.getKey();
                 String word = ent.getValue();
                 word = word.replace(";", "");
-                sb.append(word).append(";").append((count /all) * 200 ).append("|");
+                sb.append(word).append(";").append((count /all) * 30 ).append("|");
                 logger.info(new StringBuilder("top - ").append(word).append('>').append((count / all) * 200).toString());
             }
             collector.emit(new Values(sb.toString()));
